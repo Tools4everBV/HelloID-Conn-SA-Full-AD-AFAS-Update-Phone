@@ -57,9 +57,9 @@ This delegated form task will update two systems. On the AD user account the att
 
 ## Add another system to update
 It is possible to add another system to update the mobile and fixed phone numbers. For example for Topdesk persons. The following action steps are required to add another system:
-1. Copy the global variables from the other git repository (for example the Topdesk global variables)
+1. Copy the global variables from the other [github repository](https://github.com/Tools4everBV/HelloID-Conn-SA-Full-AD-Topdesk-Update-Phone) (for example the Topdesk global variables)
 2. Add the global variables to your HelloID tenant
-3. Open the task from the other git repository and copy the region of the other system (for example region Topdesk)
+3. Open the task from the other [github repository](https://github.com/Tools4everBV/HelloID-Conn-SA-Full-AD-Topdesk-Update-Phone) and copy the region of the other system (for example region Topdesk)
 4. Add the region in the Task script
 
 ## Getting help
