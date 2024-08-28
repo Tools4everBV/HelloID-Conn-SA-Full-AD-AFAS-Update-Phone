@@ -2,9 +2,8 @@
 ## Description
 This HelloID Service Automation Delegated Form provides updates for mobile and fixed phone numbers on an AD user account and AFAS employee. The following options are available:
  1. Search and select the target AD user account
- 2. Show basic AD user account attributes of the selected target user
- 3. Enter new values for the following AD user account attributes: OfficePhone and MobilePhone
- 4. AD user account [OfficePhone and MobilePhone] and AFAS employee [TeNr and MbNr] attributes are updated with new values
+ 2. Enter new values for the following AD user account attributes: OfficePhone and MobilePhone
+ 3. AD user account [OfficePhone and MobilePhone] and AFAS employee [TeNr and MbNr] attributes are updated with new values
 
 ## Versioning
 | Version | Description                 | Date       |
