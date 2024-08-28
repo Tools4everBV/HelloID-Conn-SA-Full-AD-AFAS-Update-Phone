@@ -28,7 +28,7 @@ $tmpName = @'
 AFASBaseUrl
 '@ 
 $tmpValue = @'
-https://45963.restaccept.afas.online/profitrestservices
+https://yourtennantid.rest.afas.online/profitrestservices
 '@ 
 $globalHelloIDVariables.Add([PSCustomObject]@{name = $tmpName; value = $tmpValue; secret = "False"});
 
@@ -37,7 +37,7 @@ $tmpName = @'
 ADusersSearchOU
 '@ 
 $tmpValue = @'
-[{ "OU": "OU=HelloID Training,DC=rho004,DC=nl"}]
+[{ "OU": "OU=Disabled Users,OU=HelloID Training,DC=veeken,DC=local"},{ "OU": "OU=Users,OU=HelloID Training,DC=veeken,DC=local"}]
 '@ 
 $globalHelloIDVariables.Add([PSCustomObject]@{name = $tmpName; value = $tmpValue; secret = "False"});
 
