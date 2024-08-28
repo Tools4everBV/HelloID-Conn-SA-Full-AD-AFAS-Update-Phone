@@ -7,20 +7,26 @@ This HelloID Service Automation Delegated Form provides updates for mobile and f
  4. AD user account [OfficePhone and MobilePhone] and AFAS employee [TeNr and MbNr] attributes are updated with new values
 
 ## Versioning
-| Version | Description | Date |
-| - | - | - |
-| 1.0.0   | First release | 2023/05/24  |
+| Version | Description                 | Date       |
+| ------- | --------------------------- | ---------- |
+| 1.0.0   | First release               | 24-05-2023 |
+| 1.0.1   | Optimization of task script | 28-08-2024 |
 
 <!-- TABLE OF CONTENTS -->
 ## Table of Contents
-* [Description](#description)
-* [All-in-one PowerShell setup script](#all-in-one-powershell-setup-script)
-  * [Getting started](#getting-started)
-* [Post-setup configuration](#post-setup-configuration)
-* [Manual resources](#manual-resources)
-* [Add another system to update](#add-another-system-to-update)
-* [Getting help](#getting-help)
-* [HelloID Docs](#helloid-Docs)
+- [Description](#description)
+- [Versioning](#versioning)
+- [Table of Contents](#table-of-contents)
+- [All-in-one PowerShell setup script](#all-in-one-powershell-setup-script)
+  - [Getting started](#getting-started)
+- [Post-setup configuration](#post-setup-configuration)
+- [Manual resources](#manual-resources)
+  - [Powershell data source 'AD-AFAS-account-update-phone-lookup-user-generate-table'](#powershell-data-source-ad-afas-account-update-phone-lookup-user-generate-table)
+  - [Powershell data source 'AD-AFAS-account-update-phone-table-user-details'](#powershell-data-source-ad-afas-account-update-phone-table-user-details)
+  - [Delegated form task 'AD AFAS Account - Update phone'](#delegated-form-task-ad-afas-account---update-phone)
+- [Add another system to update](#add-another-system-to-update)
+- [Getting help](#getting-help)
+- [HelloID Docs](#helloid-docs)
 
 
 ## All-in-one PowerShell setup script

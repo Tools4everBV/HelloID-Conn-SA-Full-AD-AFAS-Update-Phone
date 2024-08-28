@@ -76,46 +76,6 @@
     "label": "Details",
     "fields": [
       {
-        "key": "gridDetails",
-        "templateOptions": {
-          "label": "Basic attributes",
-          "required": false,
-          "grid": {
-            "columns": [
-              {
-                "headerName": "Name",
-                "field": "name"
-              },
-              {
-                "headerName": "Value",
-                "field": "value"
-              }
-            ],
-            "height": 310,
-            "rowSelection": "single"
-          },
-          "dataSourceConfig": {
-            "dataSourceGuid": "$dataSourceGuid_1",
-            "input": {
-              "propertyInputs": [
-                {
-                  "propertyName": "selectedUser",
-                  "otherFieldValue": {
-                    "otherFieldKey": "gridUsers"
-                  }
-                }
-              ]
-            }
-          },
-          "useFilter": false
-        },
-        "type": "grid",
-        "summaryVisibility": "Hide element",
-        "requiresTemplateOptions": true,
-        "requiresKey": true,
-        "requiresDataSource": true
-      },
-      {
         "key": "mobilePhone",
         "templateOptions": {
           "label": "Mobile work",
