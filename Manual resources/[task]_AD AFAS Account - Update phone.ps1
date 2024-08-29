@@ -23,13 +23,13 @@ $WarningPreference = "Continue"
 
 # variables configured in form:
 $userPrincipalName = $form.gridUsers.UserPrincipalName
-$samAccountName = $form.gridUsers.SamAccountName
+$employeeID = $form.gridUsers.employeeID
+$displayName = $form.gridUsers.DisplayName
+$adUserSID = $form.gridUsers.SID
 $phoneMobile = $form.mobilePhone
 $phoneMobileOld = $form.gridUsers.MobilePhone
 $phoneFixed = $form.officePhone
 $phoneFixedOld = $form.gridUsers.OfficePhone
-$employeeID = $form.gridUsers.employeeID
-$displayName = $form.gridUsers.displayName
 #endregion init
 
 #region global functions
@@ -70,7 +70,7 @@ try {
         $phoneFixed = $null
     } 
 
-    Set-ADUser -Identity $samAccountName -MobilePhone $phoneMobile -OfficePhone $phoneFixed
+    Set-ADUser -Identity $adUserSID -MobilePhone $phoneMobile -OfficePhone $phoneFixed
     
     Write-Information "Finished updating AD user [$userPrincipalName] for attributes [MobilePhone] from [$phoneMobileOld] to [$phoneMobile] and [BusinessPhones] from [$phoneFixedOld] to [$phoneFixed]"
     $Log = @{
@@ -78,8 +78,8 @@ try {
         System            = "ActiveDirectory" # optional (free format text) 
         Message           = "Successfully updated AD user [$userPrincipalName] for attributes [MobilePhone] from [$phoneMobileOld] to [$phoneMobile] and [BusinessPhones] from [$phoneFixedOld] to [$phoneFixed]" # required (free format text) 
         IsError           = $false # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) 
-        TargetDisplayName = $adUser.name # optional (free format text) 
-        TargetIdentifier  = $([string]$adUser.SID) # optional (free format text) 
+        TargetDisplayName = $displayName # optional (free format text) 
+        TargetIdentifier  = $([string]$adUserSID) # optional (free format text) 
     }
     #send result back  
     Write-Information -Tags "Audit" -MessageData $log    
@@ -91,8 +91,8 @@ catch {
         System            = "ActiveDirectory" # optional (free format text) 
         Message           = "Failed to update AD user [$userPrincipalName] for attributes [MobilePhone] from [$phoneMobileOld] to [$phoneMobile] and [BusinessPhones] from [$phoneFixedOld] to [$phoneFixed]" # required (free format text) 
         IsError           = $true # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) 
-        TargetDisplayName = $adUser.name # optional (free format text) 
-        TargetIdentifier  = $([string]$adUser.SID) # optional (free format text) 
+        TargetDisplayName = $displayName # optional (free format text) 
+        TargetIdentifier  = $([string]$adUserSID) # optional (free format text) 
     }
     #send result back  
     Write-Information -Tags "Audit" -MessageData $log      

@@ -21,7 +21,6 @@ This HelloID Service Automation Delegated Form provides updates for mobile and f
 - [Post-setup configuration](#post-setup-configuration)
 - [Manual resources](#manual-resources)
   - [Powershell data source 'AD-AFAS-account-update-phone-lookup-user-generate-table'](#powershell-data-source-ad-afas-account-update-phone-lookup-user-generate-table)
-  - [Powershell data source 'AD-AFAS-account-update-phone-table-user-details'](#powershell-data-source-ad-afas-account-update-phone-table-user-details)
   - [Delegated form task 'AD AFAS Account - Update phone'](#delegated-form-task-ad-afas-account---update-phone)
 - [Add another system to update](#add-another-system-to-update)
 - [Getting help](#getting-help)
@@ -53,9 +52,6 @@ This Delegated Form uses the following resources in order to run
 
 ### Powershell data source 'AD-AFAS-account-update-phone-lookup-user-generate-table'
 This Powershell data source runs an Active Directory query to search for matching AD user accounts. It uses an array of Active Directory OU's specified as HelloID user-defined variable named _"ADusersSearchOU"_ to specify the search scope. This data source returns additional attributes the receive the current values for OfficePhone and MobilePhone.
-
-### Powershell data source 'AD-AFAS-account-update-phone-table-user-details'
-This Powershell data source runs an Active Directory query to select an extended list of user attributes of the selected AD user account.  
 
 ### Delegated form task 'AD AFAS Account - Update phone'
 This delegated form task will update two systems. On the AD user account the attributes OfficePhone and MobilePhone will be updated. On the AFAS employee the attributes TeNr and MbNr will be updated.

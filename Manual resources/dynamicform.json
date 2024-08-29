@@ -27,23 +27,19 @@
               },
               {
                 "headerName": "Display Name",
-                "field": "displayName"
+                "field": "DisplayName"
               },
               {
                 "headerName": "User Principal Name",
                 "field": "UserPrincipalName"
               },
               {
-                "headerName": "Sam Account Name",
-                "field": "SamAccountName"
+                "headerName": "Office Phone",
+                "field": "OfficePhone"
               },
               {
                 "headerName": "Mobile Phone",
                 "field": "MobilePhone"
-              },
-              {
-                "headerName": "Office Phone",
-                "field": "OfficePhone"
               }
             ],
             "height": 300,
@@ -62,7 +58,8 @@
               ]
             }
           },
-          "useFilter": false
+          "useFilter": false,
+          "allowCsvDownload": true
         },
         "type": "grid",
         "summaryVisibility": "Show",
