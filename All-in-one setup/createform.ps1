@@ -37,7 +37,7 @@ $tmpName = @'
 ADusersSearchOU
 '@ 
 $tmpValue = @'
-[{ "OU": "OU=Disabled Users,OU=HelloID Training,DC=veeken,DC=local"},{ "OU": "OU=Users,OU=HelloID Training,DC=veeken,DC=local"}]
+[{ "OU": "OU=Disabled Users,OU=Training,DC=domain,DC=com"},{ "OU": "OU=Users,OU=Training,DC=domain,DC=com"}]
 '@ 
 $globalHelloIDVariables.Add([PSCustomObject]@{name = $tmpName; value = $tmpValue; secret = "False"});
 
