@@ -55,11 +55,12 @@ try {
             foreach ($user in $users) {
                 $returnObject = @{
                     SamAccountName    = $user.SamAccountName
-                    displayName       = $user.displayName
+                    DisplayName       = $user.displayName
                     UserPrincipalName = $user.UserPrincipalName
                     EmployeeID        = $user.EmployeeID
                     MobilePhone       = $user.MobilePhone
                     OfficePhone       = $user.OfficePhone
+                    SID               = $([string]$user.SID)
                 }    
                 Write-Output $returnObject      
             }
