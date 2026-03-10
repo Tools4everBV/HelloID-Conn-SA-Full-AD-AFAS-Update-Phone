@@ -1,117 +1,118 @@
 [
-  {
-    "label": "Select user account",
-    "fields": [
-      {
-        "key": "searchfield",
-        "templateOptions": {
-          "label": "Search",
-          "placeholder": "Username or email address"
-        },
-        "type": "input",
-        "summaryVisibility": "Hide element",
-        "requiresTemplateOptions": true,
-        "requiresKey": true,
-        "requiresDataSource": false
-      },
-      {
-        "key": "gridUsers",
-        "templateOptions": {
-          "label": "Select user account",
-          "required": true,
-          "grid": {
-            "columns": [
-              {
-                "headerName": "Employee ID",
-                "field": "EmployeeID"
-              },
-              {
-                "headerName": "Display Name",
-                "field": "DisplayName"
-              },
-              {
-                "headerName": "User Principal Name",
-                "field": "UserPrincipalName"
-              },
-              {
-                "headerName": "Office Phone",
-                "field": "OfficePhone"
-              },
-              {
-                "headerName": "Mobile Phone",
-                "field": "MobilePhone"
-              }
-            ],
-            "height": 300,
-            "rowSelection": "single"
-          },
-          "dataSourceConfig": {
-            "dataSourceGuid": "$dataSourceGuid_0",
-            "input": {
-              "propertyInputs": [
-                {
-                  "propertyName": "searchUser",
-                  "otherFieldValue": {
-                    "otherFieldKey": "searchfield"
-                  }
-                }
-              ]
-            }
-          },
-          "useFilter": false,
-          "allowCsvDownload": true
-        },
-        "type": "grid",
-        "summaryVisibility": "Show",
-        "requiresTemplateOptions": true,
-        "requiresKey": true,
-        "requiresDataSource": true
-      }
-    ]
-  },
-  {
-    "label": "Details",
-    "fields": [
-      {
-        "key": "mobilePhone",
-        "templateOptions": {
-          "label": "Mobile work",
-          "pattern": "^(06-)+[0-9]{8}$",
-          "useDependOn": true,
-          "dependOn": "gridUsers",
-          "dependOnProperty": "MobilePhone"
-        },
-        "validation": {
-          "messages": {
-            "pattern": "Please fill in the mobile number in the following format: 06-12345678"
-          }
-        },
-        "type": "input",
-        "summaryVisibility": "Show",
-        "requiresTemplateOptions": true,
-        "requiresKey": true,
-        "requiresDataSource": false
-      },
-      {
-        "key": "officePhone",
-        "templateOptions": {
-          "label": "Fixed work",
-          "pattern": "^(088-123)+[0-9]{4}$",
-          "useDependOn": true,
-          "dependOn": "gridUsers",
-          "dependOnProperty": "OfficePhone"
-        },
-        "validation": {
-          "messages": {
-            "pattern": "Please fill in the mobile number in the following format: 088-123xxxx"
-          }
-        },
-        "type": "input",
-        "summaryVisibility": "Show",
-        "requiresTemplateOptions": true,
-        "requiresKey": true,
-        "requiresDataSource": false
-      }
-    ]
-  }
+    {
+        "label":  "Select user account",
+        "fields":  [
+                       {
+                           "key":  "searchfield",
+                           "templateOptions":  {
+                                                   "label":  "Search",
+                                                   "placeholder":  "Username or email address"
+                                               },
+                           "type":  "input",
+                           "summaryVisibility":  "Hide element",
+                           "requiresTemplateOptions":  true,
+                           "requiresKey":  true,
+                           "requiresDataSource":  false
+                       },
+                       {
+                           "key":  "gridUsers",
+                           "templateOptions":  {
+                                                   "label":  "Select user account",
+                                                   "required":  true,
+                                                   "grid":  {
+                                                                "columns":  [
+                                                                                {
+                                                                                    "headerName":  "Display Name",
+                                                                                    "field":  "DisplayName"
+                                                                                },
+                                                                                {
+                                                                                    "headerName":  "UserPrincipalName",
+                                                                                    "field":  "UserPrincipalName"
+                                                                                },
+                                                                                {
+                                                                                    "headerName":  "Mobile",
+                                                                                    "field":  "Mobile"
+                                                                                },
+                                                                                {
+                                                                                    "headerName":  "Telephone Number",
+                                                                                    "field":  "telephoneNumber"
+                                                                                },
+                                                                                {
+                                                                                    "headerName":  "ObjectGuid",
+                                                                                    "field":  "ObjectGuid"
+                                                                                }
+                                                                            ],
+                                                                "height":  300,
+                                                                "rowSelection":  "single"
+                                                            },
+                                                   "dataSourceConfig":  {
+                                                                            "dataSourceGuid":  "$dataSourceGuid_0",
+                                                                            "input":  {
+                                                                                          "propertyInputs":  [
+                                                                                                                 {
+                                                                                                                     "propertyName":  "searchUser",
+                                                                                                                     "otherFieldValue":  {
+                                                                                                                                             "otherFieldKey":  "searchfield"
+                                                                                                                                         }
+                                                                                                                 }
+                                                                                                             ]
+                                                                                      }
+                                                                        },
+                                                   "useFilter":  false,
+                                                   "allowCsvDownload":  true
+                                               },
+                           "type":  "grid",
+                           "summaryVisibility":  "Show",
+                           "requiresTemplateOptions":  true,
+                           "requiresKey":  true,
+                           "requiresDataSource":  true
+                       }
+                   ]
+    },
+    {
+        "label":  "Details",
+        "fields":  [
+                       {
+                           "key":  "mobilePhone",
+                           "templateOptions":  {
+                                                   "label":  "Mobile work",
+                                                   "pattern":  "^(06-)+[0-9]{8}$",
+                                                   "useDependOn":  true,
+                                                   "dependOn":  "gridUsers",
+                                                   "dependOnProperty":  "Mobile"
+                                               },
+                           "validation":  {
+                                              "messages":  {
+                                                               "pattern":  "Please fill in the mobile number in the following format: 06-12345678"
+                                                           }
+                                          },
+                           "type":  "input",
+                           "summaryVisibility":  "Show",
+                           "requiresTemplateOptions":  true,
+                           "requiresKey":  true,
+                           "requiresDataSource":  false
+                       },
+                       {
+                           "key":  "officePhone",
+                           "templateOptions":  {
+                                                   "label":  "Fixed work",
+                                                   "pattern":  "^[0-9]{3,4}-[0-9]{7}$",
+                                                   "useDependOn":  true,
+                                                   "dependOn":  "gridUsers",
+                                                   "dependOnProperty":  "telephoneNumber",
+                                                   "useDataSource":  false
+                                               },
+                           "validation":  {
+                                              "messages":  {
+                                                               "pattern":  "Please fill in the fixed number in the following format: 088-123xxxx"
+                                                           }
+                                          },
+                           "type":  "input",
+                           "summaryVisibility":  "Show",
+                           "requiresTemplateOptions":  true,
+                           "requiresKey":  true,
+                           "requiresDataSource":  false
+                       }
+                   ]
+    }
 ]
