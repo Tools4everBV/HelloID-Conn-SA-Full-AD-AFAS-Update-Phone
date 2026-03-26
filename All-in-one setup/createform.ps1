@@ -28,7 +28,6 @@ $tmpName = @'
 AFASBaseUrl
 '@ 
 $tmpValue = @'
-https://45963.restaccept.afas.online/profitrestservices
 '@ 
 $globalHelloIDVariables.Add([PSCustomObject]@{name = $tmpName; value = $tmpValue; secret = "False"});
 
