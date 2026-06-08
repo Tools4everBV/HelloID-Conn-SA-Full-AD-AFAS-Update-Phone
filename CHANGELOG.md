@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com), and this project adheres to [Semantic Versioning](https://semver.org).
 
-## [1.0.0] - 2026-03-10
+## [2.0.0] - 2026-03-10
 
 ### Added
 
@@ -23,3 +23,7 @@ All notable changes to this project will be documented in this file. The format 
 ### Removed
 
 - User details grid in multistep form
+
+## [1.0.0] - 15-05-2023
+
+Initial release

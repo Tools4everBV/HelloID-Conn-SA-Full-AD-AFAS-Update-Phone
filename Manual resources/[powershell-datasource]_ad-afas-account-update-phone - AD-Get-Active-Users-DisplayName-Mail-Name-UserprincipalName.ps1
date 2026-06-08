@@ -1,8 +1,11 @@
 # Variables configured in form
 $searchValue = $dataSource.searchUser
-$searchQuery = "*$searchValue*"
-$filter = "Name -like '$searchQuery' -or DisplayName -like '$searchQuery' -or userPrincipalName -like '$searchQuery' -or mail -like '$searchQuery'"
-
+if ($searchValue -eq "*") {
+    $filter = "Enabled -eq `$true -and (Name -like '*')"
+}
+else {
+    $filter = "Name -like '*$searchValue*' -or DisplayName -like '*$searchValue*' -or userPrincipalName -like '*$searchValue*' -or mail -like '*$searchValue*'"
+}
 # Global variables
 $searchOUs = $AdUsersSearchOu
 

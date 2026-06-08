@@ -5,8 +5,8 @@
                        {
                            "key":  "searchfield",
                            "templateOptions":  {
-                                                   "label":  "Search",
-                                                   "placeholder":  "Username or email address"
+                                                   "label":  "Search (wildcard search in Name, Display name, UserPrincipalName and Mail or use * to search all users)",
+                                                   "placeholder":  "Name, Display name, UserPrincipalName or Mail (use * to search all users)"
                                                },
                            "type":  "input",
                            "summaryVisibility":  "Hide element",
