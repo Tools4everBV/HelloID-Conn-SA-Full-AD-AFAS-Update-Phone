@@ -16,28 +16,28 @@ $script:duplicateFormSuffix = "_tmp" #the suffix will be added to all HelloID re
 #NOTE: You can also update the HelloID Global variable values afterwards in the HelloID Admin Portal: https://<CUSTOMER>.helloid.com/admin/variablelibrary
 $globalHelloIDVariables = [System.Collections.Generic.List[object]]@();
 
-#Global variable #1 >> AFASToken
+#Global variable #1 >> AFASBaseUrl
+$tmpName = @'
+AFASBaseUrl
+'@ 
+$tmpValue = @'
+https://<CUSTOMER>.afas.online/profitrestservices
+'@ 
+$globalHelloIDVariables.Add([PSCustomObject]@{name = $tmpName; value = $tmpValue; secret = "False"});
+
+#Global variable #2 >> AFASToken
 $tmpName = @'
 AFASToken
 '@ 
 $tmpValue = "" 
 $globalHelloIDVariables.Add([PSCustomObject]@{name = $tmpName; value = $tmpValue; secret = "True"});
 
-#Global variable #2 >> AFASBaseUrl
-$tmpName = @'
-AFASBaseUrl
-'@ 
-$tmpValue = @'
-https://yourtennantid.rest.afas.online/profitrestservices
-'@ 
-$globalHelloIDVariables.Add([PSCustomObject]@{name = $tmpName; value = $tmpValue; secret = "False"});
-
 #Global variable #3 >> ADusersSearchOU
 $tmpName = @'
 ADusersSearchOU
 '@ 
 $tmpValue = @'
-[{ "OU": "OU=Disabled Users,OU=Training,DC=domain,DC=com"},{ "OU": "OU=Users,OU=Training,DC=domain,DC=com"}]
+OU=Users,OU=enyoi,DC=enyoi,DC=local;OU=UsersLite,OU=enyoi,DC=enyoi,DC=local
 '@ 
 $globalHelloIDVariables.Add([PSCustomObject]@{name = $tmpName; value = $tmpValue; secret = "False"});
 
@@ -95,7 +95,7 @@ function Invoke-HelloIDGlobalVariable {
     try {
         $uri = ($script:PortalBaseUrl + "api/v1/automation/variables/named/$Name")
         $response = Invoke-RestMethod -Method Get -Uri $uri -Headers $script:headers -ContentType "application/json" -Verbose:$false
-    
+
         if ([string]::IsNullOrEmpty($response.automationVariableGuid)) {
             #Create Variable
             $body = @{
@@ -105,7 +105,7 @@ function Invoke-HelloIDGlobalVariable {
                 ItemType = 0;
             }    
             $body = ConvertTo-Json -InputObject $body -Depth 100
-    
+
             $uri = ($script:PortalBaseUrl + "api/v1/automation/variable")
             $response = Invoke-RestMethod -Method Post -Uri $uri -Headers $script:headers -ContentType "application/json" -Verbose:$false -Body $body
             $variableGuid = $response.automationVariableGuid
@@ -131,14 +131,14 @@ function Invoke-HelloIDAutomationTask {
         [parameter()][String][AllowEmptyString()]$ForceCreateTask,
         [parameter(Mandatory)][Ref]$returnObject
     )
-    
+
     $TaskName = $TaskName + $(if ($script:duplicateForm -eq $true) { $script:duplicateFormSuffix })
 
     try {
         $uri = ($script:PortalBaseUrl +"api/v1/automationtasks?search=$TaskName&container=$AutomationContainer")
         $responseRaw = (Invoke-RestMethod -Method Get -Uri $uri -Headers $script:headers -ContentType "application/json" -Verbose:$false) 
         $response = $responseRaw | Where-Object -filter {$_.name -eq $TaskName}
-    
+
         if([string]::IsNullOrEmpty($response.automationTaskGuid) -or $ForceCreateTask -eq $true) {
             #Create Task
 
@@ -151,7 +151,7 @@ function Invoke-HelloIDAutomationTask {
                 variables           = (ConvertFrom-Json-WithEmptyArray($Variables));
             }
             $body = ConvertTo-Json -InputObject $body -Depth 100
-    
+
             $uri = ($script:PortalBaseUrl +"api/v1/automationtasks/powershell")
             $response = Invoke-RestMethod -Method Post -Uri $uri -Headers $script:headers -ContentType "application/json" -Verbose:$false -Body $body
             $taskGuid = $response.automationTaskGuid
@@ -178,6 +178,7 @@ function Invoke-HelloIDDatasource {
         [parameter()][String][AllowEmptyString()]$DatasourcePsScript,        
         [parameter()][String][AllowEmptyString()]$DatasourceInput,
         [parameter()][String][AllowEmptyString()]$AutomationTaskGuid,
+        [parameter()][String][AllowEmptyString()]$DatasourceRunInCloud,
         [parameter(Mandatory)][Ref]$returnObject
     )
 
@@ -189,11 +190,11 @@ function Invoke-HelloIDDatasource {
         "3" { "Task data source"; break} 
         "4" { "Powershell data source"; break}
     }
-    
+
     try {
         $uri = ($script:PortalBaseUrl +"api/v1/datasource/named/$DatasourceName")
         $response = Invoke-RestMethod -Method Get -Uri $uri -Headers $script:headers -ContentType "application/json" -Verbose:$false
-      
+    
         if([string]::IsNullOrEmpty($response.dataSourceGUID)) {
             #Create DataSource
             $body = @{
@@ -204,12 +205,13 @@ function Invoke-HelloIDDatasource {
                 value              = (ConvertFrom-Json-WithEmptyArray($DatasourceStaticValue));
                 script             = $DatasourcePsScript;
                 input              = (ConvertFrom-Json-WithEmptyArray($DatasourceInput));
+                runInCloud         = $DatasourceRunInCloud;
             }
             $body = ConvertTo-Json -InputObject $body -Depth 100
-      
+    
             $uri = ($script:PortalBaseUrl +"api/v1/datasource")
             $response = Invoke-RestMethod -Method Post -Uri $uri -Headers $script:headers -ContentType "application/json" -Verbose:$false -Body $body
-              
+            
             $datasourceGuid = $response.dataSourceGUID
             Write-Information "$datasourceTypeName '$DatasourceName' created$(if ($script:debugLogging -eq $true) { ": " + $datasourceGuid })"
         } else {
@@ -218,7 +220,7 @@ function Invoke-HelloIDDatasource {
             Write-Warning "$datasourceTypeName '$DatasourceName' already exists$(if ($script:debugLogging -eq $true) { ": " + $datasourceGuid })"
         }
     } catch {
-      Write-Error "$datasourceTypeName '$DatasourceName', message: $_"
+        Write-Error "$datasourceTypeName '$DatasourceName', message: $_"
     }
 
     $returnObject.Value = $datasourceGuid
@@ -230,7 +232,7 @@ function Invoke-HelloIDDynamicForm {
         [parameter(Mandatory)][String]$FormSchema,
         [parameter(Mandatory)][Ref]$returnObject
     )
-    
+
     $FormName = $FormName + $(if ($script:duplicateForm -eq $true) { $script:duplicateFormSuffix })
 
     try {
@@ -240,7 +242,7 @@ function Invoke-HelloIDDynamicForm {
         } catch {
             $response = $null
         }
-    
+
         if(([string]::IsNullOrEmpty($response.dynamicFormGUID)) -or ($response.isUpdated -eq $true)) {
             #Create Dynamic form
             $body = @{
@@ -248,10 +250,10 @@ function Invoke-HelloIDDynamicForm {
                 FormSchema = (ConvertFrom-Json-WithEmptyArray($FormSchema));
             }
             $body = ConvertTo-Json -InputObject $body -Depth 100
-    
+
             $uri = ($script:PortalBaseUrl +"api/v1/forms")
             $response = Invoke-RestMethod -Method Post -Uri $uri -Headers $script:headers -ContentType "application/json" -Verbose:$false -Body $body
-    
+
             $formGuid = $response.dynamicFormGUID
             Write-Information "Dynamic form '$formName' created$(if ($script:debugLogging -eq $true) { ": " + $formGuid })"
         } else {
@@ -287,7 +289,7 @@ function Invoke-HelloIDDelegatedForm {
         } catch {
             $response = $null
         }
-    
+
         if([string]::IsNullOrEmpty($response.delegatedFormGUID)) {
             #Create DelegatedForm
             $body = @{
@@ -304,10 +306,10 @@ function Invoke-HelloIDDelegatedForm {
                 }
             }
             $body = ConvertTo-Json -InputObject $body -Depth 100
-    
+
             $uri = ($script:PortalBaseUrl +"api/v1/delegatedforms")
             $response = Invoke-RestMethod -Method Post -Uri $uri -Headers $script:headers -ContentType "application/json" -Verbose:$false -Body $body
-    
+
             $delegatedFormGuid = $response.delegatedFormGUID
             Write-Information "Delegated form '$DelegatedFormName' created$(if ($script:debugLogging -eq $true) { ": " + $delegatedFormGuid })"
             $delegatedFormCreated = $true
@@ -329,7 +331,6 @@ function Invoke-HelloIDDelegatedForm {
     $returnObject.value.created = $delegatedFormCreated
 }
 
-
 <# Begin: HelloID Global Variables #>
 foreach ($item in $globalHelloIDVariables) {
 	Invoke-HelloIDGlobalVariable -Name $item.name -Value $item.value -Secret $item.secret 
@@ -338,42 +339,38 @@ foreach ($item in $globalHelloIDVariables) {
 
 
 <# Begin: HelloID Data sources #>
-<# Begin: DataSource "AD-AFAS-account-update-phone-lookup-user-generate-table" #>
+<# Begin: DataSource "ad-afas-account-update-phone | AD-Get-Active-Users-DisplayName-Mail-Name-UserprincipalName" #>
 $tmpPsScript = @'
-#######################################################################
-# Template: RHo HelloID SA Powershell data source
-# Name:     AD-AFAS-account-update-phone-lookup-user-generate-table
-# Date:     15-05-2023
-#######################################################################
+# Variables configured in form
+$searchValue = $dataSource.searchUser
+if ($searchValue -eq "*") {
+    $filter = "Name -like '*'"
+}
+else {
+    $filter = "Name -like '*$searchValue*' -or DisplayName -like '*$searchValue*' -or userPrincipalName -like '*$searchValue*' -or mail -like '*$searchValue*'"
+}
+# Global variables
+$searchOUs = $AdUsersSearchOu
 
-# For basic information about powershell data sources see:
-# https://docs.helloid.com/en/service-automation/dynamic-forms/data-sources/powershell-data-sources/add,-edit,-or-remove-a-powershell-data-source.html#add-a-powershell-data-source
+# Fixed values
+$propertiesToSelect = @(                    
+    "SamAccountName",
+    "DisplayName",
+    "UserPrincipalName",
+    "Mobile", 
+    "telephoneNumber",
+    "EmployeeID",
+    "ObjectGuid"
+) # Properties to select from Microsoft AD, comma separated
 
-# Service automation variables:
-# https://docs.helloid.com/en/service-automation/service-automation-variables/service-automation-variable-reference.html
-
-#region init
-
+# Set debug logging
 $VerbosePreference = "SilentlyContinue"
 $InformationPreference = "Continue"
 $WarningPreference = "Continue"
 
-# global variables (Automation --> Variable libary):
-$searchOUs = $ADusersSearchOU
-
-# variables configured in form:
-$searchValue = $dataSource.searchUser
-$searchQuery = "*$searchValue*"
-
-#endregion init
-
-#region functions
-
-#endregion functions
-
-#region lookup
 try {
-    Write-Verbose "Querying data"
+    #region Searching user
+    $actionMessage = "searching AD account(s) with the value entered [$($searchValue)]"
 
     if ([String]::IsNullOrEmpty($searchValue) -eq $true) {
         return
@@ -381,59 +378,54 @@ try {
     else {
         Write-Information "SearchQuery: $searchQuery"
         Write-Information "SearchBase: $searchOUs"
-        
-        $ous = $searchOUs | ConvertFrom-Json
+         
+        $ous = $searchOUs -split ';'
         $users = foreach ($item in $ous) {
-            Get-ADUser -Filter { Name -like $searchQuery -or DisplayName -like $searchQuery -or userPrincipalName -like $searchQuery -or mail -like $searchQuery -or EmployeeID -like $searchQuery } -SearchBase $item.ou -properties SamAccountName, displayName, UserPrincipalName, mobilePhone, officePhone, EmployeeID
+            $getAdUsersSplatParams = @{
+                Filter      = $filter
+                Searchbase  = $item
+                Properties  = $propertiesToSelect
+                Verbose     = $False
+                ErrorAction = "Stop"
+            }
+            Get-AdUser @getAdUsersSplatParams | Select-Object -Property $propertiesToSelect
         }
-    
-
-        $users = $users | Where-Object { $null -ne $_.employeeID }
+         
         $users = $users | Sort-Object -Property DisplayName
-
-        Write-Information "Successfully queried data. Result count: $(($users | Measure-Object).Count)"
-
-        if (($users | Measure-Object).Count -gt 0) {
+        $resultCount = @($users).Count
+        Write-Information "Result count: $resultCount"
+         
+        if ($resultCount -gt 0) {
             foreach ($user in $users) {
-                $returnObject = @{
-                    SamAccountName    = $user.SamAccountName
-                    DisplayName       = $user.displayName
-                    UserPrincipalName = $user.UserPrincipalName
-                    EmployeeID        = $user.EmployeeID
-                    MobilePhone       = $user.MobilePhone
-                    OfficePhone       = $user.OfficePhone
-                    SID               = $([string]$user.SID)
-                }    
-                Write-Output $returnObject      
+                Write-Output $user
             }
         }
     }
 }
 catch {
     $ex = $PSItem
-    Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
-        
-    Write-Error "Error retrieving AD user [$userPrincipalName] basic attributes. Error: $($_.Exception.Message)"
+    Write-Warning "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)"
+    Write-Error "Error $($actionMessage). Error: $($ex.Exception.Message)"
+    # exit # use when using multiple try/catch and the script must stop
 }
-#endregion lookup
 '@ 
 $tmpModel = @'
-[{"key":"EmployeeID","type":0},{"key":"OfficePhone","type":0},{"key":"DisplayName","type":0},{"key":"SID","type":0},{"key":"UserPrincipalName","type":0},{"key":"MobilePhone","type":0},{"key":"SamAccountName","type":0}]
+[{"key":"SamAccountName","type":0},{"key":"DisplayName","type":0},{"key":"UserPrincipalName","type":0},{"key":"Mobile","type":0},{"key":"telephoneNumber","type":0},{"key":"ObjectGuid","type":0}]
 '@ 
 $tmpInput = @'
 [{"description":null,"translateDescription":false,"inputFieldType":1,"key":"searchUser","type":0,"options":1}]
 '@ 
 $dataSourceGuid_0 = [PSCustomObject]@{} 
 $dataSourceGuid_0_Name = @'
-AD-AFAS-account-update-phone-lookup-user-generate-table
+ad-afas-account-update-phone | AD-Get-Active-Users-DisplayName-Mail-Name-UserprincipalName
 '@ 
-Invoke-HelloIDDatasource -DatasourceName $dataSourceGuid_0_Name -DatasourceType "4" -DatasourceInput $tmpInput -DatasourcePsScript $tmpPsScript -DatasourceModel $tmpModel -returnObject ([Ref]$dataSourceGuid_0) 
-<# End: DataSource "AD-AFAS-account-update-phone-lookup-user-generate-table" #>
+Invoke-HelloIDDatasource -DatasourceName $dataSourceGuid_0_Name -DatasourceType "4" -DatasourceInput $tmpInput -DatasourcePsScript $tmpPsScript -DatasourceModel $tmpModel -DataSourceRunInCloud "False" -returnObject ([Ref]$dataSourceGuid_0) 
+<# End: DataSource "ad-afas-account-update-phone | AD-Get-Active-Users-DisplayName-Mail-Name-UserprincipalName" #>
 <# End: HelloID Data sources #>
 
 <# Begin: Dynamic Form "AD AFAS Account - Update phone" #>
 $tmpSchema = @"
-[{"label":"Select user account","fields":[{"key":"searchfield","templateOptions":{"label":"Search","placeholder":"Username or email address"},"type":"input","summaryVisibility":"Hide element","requiresTemplateOptions":true,"requiresKey":true,"requiresDataSource":false},{"key":"gridUsers","templateOptions":{"label":"Select user account","required":true,"grid":{"columns":[{"headerName":"Employee ID","field":"EmployeeID"},{"headerName":"Display Name","field":"DisplayName"},{"headerName":"User Principal Name","field":"UserPrincipalName"},{"headerName":"Office Phone","field":"OfficePhone"},{"headerName":"Mobile Phone","field":"MobilePhone"}],"height":300,"rowSelection":"single"},"dataSourceConfig":{"dataSourceGuid":"$dataSourceGuid_0","input":{"propertyInputs":[{"propertyName":"searchUser","otherFieldValue":{"otherFieldKey":"searchfield"}}]}},"useFilter":false,"allowCsvDownload":true},"type":"grid","summaryVisibility":"Show","requiresTemplateOptions":true,"requiresKey":true,"requiresDataSource":true}]},{"label":"Details","fields":[{"key":"mobilePhone","templateOptions":{"label":"Mobile work","pattern":"^(06-)+[0-9]{8}$","useDependOn":true,"dependOn":"gridUsers","dependOnProperty":"MobilePhone"},"validation":{"messages":{"pattern":"Please fill in the mobile number in the following format: 06-12345678"}},"type":"input","summaryVisibility":"Show","requiresTemplateOptions":true,"requiresKey":true,"requiresDataSource":false},{"key":"officePhone","templateOptions":{"label":"Fixed work","pattern":"^(088-123)+[0-9]{4}$","useDependOn":true,"dependOn":"gridUsers","dependOnProperty":"OfficePhone"},"validation":{"messages":{"pattern":"Please fill in the mobile number in the following format: 088-123xxxx"}},"type":"input","summaryVisibility":"Show","requiresTemplateOptions":true,"requiresKey":true,"requiresDataSource":false}]}]
+[{"label":"Select user account","fields":[{"key":"searchfield","templateOptions":{"label":"Search (wildcard search in Name, Display name, UserPrincipalName and Mail or use * to search all users)","placeholder":"Name, Display name, UserPrincipalName or Mail (use * to search all users)"},"type":"input","summaryVisibility":"Hide element","requiresTemplateOptions":true,"requiresKey":true,"requiresDataSource":false},{"key":"gridUsers","templateOptions":{"label":"Select user account","required":true,"grid":{"columns":[{"headerName":"Display Name","field":"DisplayName"},{"headerName":"UserPrincipalName","field":"UserPrincipalName"},{"headerName":"Mobile","field":"Mobile"},{"headerName":"Telephone Number","field":"telephoneNumber"},{"headerName":"ObjectGuid","field":"ObjectGuid"}],"height":300,"rowSelection":"single"},"dataSourceConfig":{"dataSourceGuid":"$dataSourceGuid_0","input":{"propertyInputs":[{"propertyName":"searchUser","otherFieldValue":{"otherFieldKey":"searchfield"}}]}},"useFilter":false,"allowCsvDownload":true},"type":"grid","summaryVisibility":"Show","requiresTemplateOptions":true,"requiresKey":true,"requiresDataSource":true}]},{"label":"Details","fields":[{"key":"mobilePhone","templateOptions":{"label":"Mobile work","pattern":"^(06-)+[0-9]{8}$","useDependOn":true,"dependOn":"gridUsers","dependOnProperty":"Mobile"},"validation":{"messages":{"pattern":"Please fill in the mobile number in the following format: 06-12345678"}},"type":"input","summaryVisibility":"Show","requiresTemplateOptions":true,"requiresKey":true,"requiresDataSource":false},{"key":"officePhone","templateOptions":{"label":"Fixed work","pattern":"^[0-9]{3,4}-[0-9]{7}$","useDependOn":true,"dependOn":"gridUsers","dependOnProperty":"telephoneNumber","useDataSource":false},"validation":{"messages":{"pattern":"Please fill in the fixed number in the following format: 088-123xxxx"}},"type":"input","summaryVisibility":"Show","requiresTemplateOptions":true,"requiresKey":true,"requiresDataSource":false}]}]
 "@ 
 
 $dynamicFormGuid = [PSCustomObject]@{} 
@@ -452,7 +444,7 @@ if(-not[String]::IsNullOrEmpty($delegatedFormAccessGroupNames)){
             $response = Invoke-RestMethod -Method Get -Uri $uri -Headers $script:headers -ContentType "application/json" -Verbose:$false
             $delegatedFormAccessGroupGuid = $response.groupGuid
             $delegatedFormAccessGroupGuids += $delegatedFormAccessGroupGuid
-            
+        
             Write-Information "HelloID (access)group '$group' successfully found$(if ($script:debugLogging -eq $true) { ": " + $delegatedFormAccessGroupGuid })"
         } catch {
             Write-Error "HelloID (access)group '$group', message: $_"
@@ -469,10 +461,10 @@ foreach($category in $delegatedFormCategories) {
         $uri = ($script:PortalBaseUrl +"api/v1/delegatedformcategories/$category")
         $response = Invoke-RestMethod -Method Get -Uri $uri -Headers $script:headers -ContentType "application/json" -Verbose:$false
         $response = $response | Where-Object {$_.name.en -eq $category}
-        
+    
         $tmpGuid = $response.delegatedFormCategoryGuid
         $delegatedFormCategoryGuids += $tmpGuid
-        
+    
         Write-Information "HelloID Delegated Form category '$category' successfully found$(if ($script:debugLogging -eq $true) { ": " + $tmpGuid })"
     } catch {
         Write-Warning "HelloID Delegated Form category '$category' not found"
@@ -498,7 +490,7 @@ $delegatedFormName = @'
 AD AFAS Account - Update phone
 '@
 $tmpTask = @'
-{"name":"AD AFAS Account - Update phone","script":"#######################################################################\r\n# Template: RHo HelloID SA Delegated form task\r\n# Name:     AD-AFAS-account-update-phone\r\n# Date:     28-08-2024\r\n#######################################################################\r\n\r\n# For basic information about delegated form tasks see:\r\n# https://docs.helloid.com/en/service-automation/delegated-forms/delegated-form-powershell-scripts/add-a-powershell-script-to-a-delegated-form.html\r\n\r\n# Service automation variables:\r\n# https://docs.helloid.com/en/service-automation/service-automation-variables/service-automation-variable-reference.html\r\n\r\n#region init\r\n# Set TLS to accept TLS, TLS 1.1 and TLS 1.2\r\n[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls12\r\n\r\n$VerbosePreference = \"SilentlyContinue\"\r\n$InformationPreference = \"Continue\"\r\n$WarningPreference = \"Continue\"\r\n\r\n# global variables (Automation --> Variable libary):\r\n# $globalVar = $globalVarName\r\n\r\n# variables configured in form:\r\n$userPrincipalName = $form.gridUsers.UserPrincipalName\r\n$employeeID = $form.gridUsers.employeeID\r\n$displayName = $form.gridUsers.DisplayName\r\n$adUserSID = $form.gridUsers.SID\r\n$phoneMobile = $form.mobilePhone\r\n$phoneMobileOld = $form.gridUsers.MobilePhone\r\n$phoneFixed = $form.officePhone\r\n$phoneFixedOld = $form.gridUsers.OfficePhone\r\n#endregion init\r\n\r\n#region global functions\r\nfunction Resolve-HTTPError {\r\n    [CmdletBinding()]\r\n    param (\r\n        [Parameter(Mandatory,\r\n            ValueFromPipeline\r\n        )]\r\n        [object]$ErrorObject\r\n    )\r\n    process {\r\n        $httpErrorObj = [PSCustomObject]@{\r\n            FullyQualifiedErrorId = $ErrorObject.FullyQualifiedErrorId\r\n            MyCommand             = $ErrorObject.InvocationInfo.MyCommand\r\n            RequestUri            = $ErrorObject.TargetObject.RequestUri\r\n            ScriptStackTrace      = $ErrorObject.ScriptStackTrace\r\n            ErrorMessage          = ''\r\n        }\r\n        if ($ErrorObject.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') {\r\n            $httpErrorObj.ErrorMessage = $ErrorObject.ErrorDetails.Message\r\n        }\r\n        elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {\r\n            $httpErrorObj.ErrorMessage = [HelloID.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()\r\n        }\r\n        Write-Output $httpErrorObj\r\n    }\r\n}\r\n#endregion global functions\r\n\r\n#region AD\r\ntry {\r\n    Write-Information \"Start updating AD user [$userPrincipalName]\"\r\n    if ([String]::IsNullOrEmpty($phoneMobile) -eq $true) {\r\n        $phoneMobile = $null\r\n    }\r\n    if ([String]::IsNullOrEmpty($phoneFixed) -eq $true) {\r\n        $phoneFixed = $null\r\n    } \r\n\r\n    Set-ADUser -Identity $adUserSID -MobilePhone $phoneMobile -OfficePhone $phoneFixed\r\n    \r\n    Write-Information \"Finished updating AD user [$userPrincipalName] for attributes [MobilePhone] from [$phoneMobileOld] to [$phoneMobile] and [BusinessPhones] from [$phoneFixedOld] to [$phoneFixed]\"\r\n    $Log = @{\r\n        Action            = \"UpdateAccount\" # optional. ENUM (undefined = default) \r\n        System            = \"ActiveDirectory\" # optional (free format text) \r\n        Message           = \"Successfully updated AD user [$userPrincipalName] for attributes [MobilePhone] from [$phoneMobileOld] to [$phoneMobile] and [BusinessPhones] from [$phoneFixedOld] to [$phoneFixed]\" # required (free format text) \r\n        IsError           = $false # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) \r\n        TargetDisplayName = $displayName # optional (free format text) \r\n        TargetIdentifier  = $([string]$adUserSID) # optional (free format text) \r\n    }\r\n    #send result back  \r\n    Write-Information -Tags \"Audit\" -MessageData $log    \r\n}\r\ncatch {\r\n    Write-Error \"Could not update AD user [$userPrincipalName] for attributes [MobilePhone] from [$phoneMobileOld] to [$phoneMobile] and [BusinessPhones] from [$phoneFixedOld] to [$phoneFixed]. Error: $($_.Exception.Message)\"\r\n    $Log = @{\r\n        Action            = \"UpdateAccount\" # optional. ENUM (undefined = default) \r\n        System            = \"ActiveDirectory\" # optional (free format text) \r\n        Message           = \"Failed to update AD user [$userPrincipalName] for attributes [MobilePhone] from [$phoneMobileOld] to [$phoneMobile] and [BusinessPhones] from [$phoneFixedOld] to [$phoneFixed]\" # required (free format text) \r\n        IsError           = $true # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) \r\n        TargetDisplayName = $displayName # optional (free format text) \r\n        TargetIdentifier  = $([string]$adUserSID) # optional (free format text) \r\n    }\r\n    #send result back  \r\n    Write-Information -Tags \"Audit\" -MessageData $log      \r\n}\r\n#endregion AD\r\n\r\n#region AFAS\r\nfunction Resolve-AFASErrorMessage {\r\n    [CmdletBinding()]\r\n    param (\r\n        [Parameter(ValueFromPipeline)]\r\n        [object]$ErrorObject\r\n    )\r\n    process {\r\n        try {\r\n            $errorObjectConverted = $ErrorObject | ConvertFrom-Json -ErrorAction Stop\r\n\r\n            if ($null -ne $errorObjectConverted.externalMessage) {\r\n                $errorMessage = $errorObjectConverted.externalMessage\r\n            }\r\n            else {\r\n                $errorMessage = $errorObjectConverted\r\n            }\r\n        }\r\n        catch {\r\n            $errorMessage = \"$($ErrorObject.Exception.Message)\"\r\n        }\r\n\r\n        Write-Output $errorMessage\r\n    }\r\n}\r\n\r\n# Used to connect to AFAS API endpoints\r\nif (-not([string]::IsNullOrEmpty($employeeID))) {\r\n    $BaseUri = $AFASBaseUrl\r\n    $Token = $AFASToken\r\n    $getConnector = \"T4E_HelloID_Users_v2\"\r\n    $updateConnector = \"KnEmployee\"\r\n\r\n    #Change mapping here\r\n    $account = [PSCustomObject]@{\r\n        'AfasEmployee' = @{\r\n            'Element' = @{\r\n                'Objects' = @(\r\n                    @{\r\n                        'KnPerson' = @{\r\n                            'Element' = @{\r\n                                'Fields' = @{\r\n                                    # # Telefoonnr. werk\r\n                                    'TeNr' = $phoneFixed                     \r\n                                    # Mobiel werk\r\n                                    'MbNr' = $phoneMobile\r\n                                }\r\n                            }\r\n                        }\r\n                    }\r\n                )\r\n            }\r\n        }\r\n    }\r\n\r\n    $filterfieldid = \"Medewerker\"\r\n    $filtervalue = $employeeID # Has to match the AFAS value of the specified filter field ($filterfieldid)\r\n\r\n    # Get current AFAS employee and verify if a user must be either [created], [updated and correlated] or just [correlated]\r\n    try {\r\n        Write-Information \"Querying AFAS employee with $($filterfieldid) $($filtervalue)\"\r\n\r\n        # Create authorization headers\r\n        $encodedToken = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($Token))\r\n        $authValue = \"AfasToken $encodedToken\"\r\n        $Headers = @{ Authorization = $authValue }\r\n\r\n        $splatWebRequest = @{\r\n            Uri             = $BaseUri + \"/connectors/\" + $getConnector + \"?filterfieldids=$filterfieldid&filtervalues=$filtervalue&operatortypes=1\"\r\n            Headers         = $headers\r\n            Method          = 'GET'\r\n            ContentType     = \"application/json;charset=utf-8\"\r\n            UseBasicParsing = $true\r\n        }        \r\n        $currentAccount = (Invoke-RestMethod @splatWebRequest -Verbose:$false).rows\r\n\r\n        if ($null -eq $currentAccount.Medewerker) {\r\n            throw \"No AFAS employee found with $($filterfieldid) $($filtervalue)\"\r\n        }\r\n        Write-Information \"Found AFAS employee [$($currentAccount.Medewerker)]\"\r\n        # Check if current TeNr or MbNr has a different value from mapped value. AFAS will throw an error when trying to update this with the same value\r\n        if ([string]$currentAccount.Telefoonnr_werk -ne $account.'AfasEmployee'.'Element'.Objects[0].'KnPerson'.'Element'.'Fields'.'TeNr' -and $null -ne $account.'AfasEmployee'.'Element'.Objects[0].'KnPerson'.'Element'.'Fields'.'TeNr') {\r\n            $propertiesChanged += @('TeNr')\r\n        }\r\n        if ([string]$currentAccount.Mobielnr_werk -ne $account.'AfasEmployee'.'Element'.Objects[0].'KnPerson'.'Element'.'Fields'.'MbNr' -and $null -ne $account.'AfasEmployee'.'Element'.Objects[0].'KnPerson'.'Element'.'Fields'.'MbNr') {\r\n            $propertiesChanged += @('MbNr')\r\n        }\r\n        if ($propertiesChanged) {\r\n            Write-Verbose \"Account property(s) required to update: [$($propertiesChanged -join \",\")]\"\r\n            $updateAction = 'Update'\r\n        }\r\n        else {\r\n            $updateAction = 'NoChanges'\r\n        }\r\n\r\n        # Update AFAS Employee\r\n        Write-Information \"Start updating AFAS employee [$($currentAccount.Medewerker)]\"\r\n        switch ($updateAction) {\r\n            'Update' {\r\n                # Create custom account object for update\r\n                $updateAccount = [PSCustomObject]@{\r\n                    'AfasEmployee' = @{\r\n                        'Element' = @{\r\n                            '@EmId'   = $currentAccount.Medewerker\r\n                            'Objects' = @(@{\r\n                                    'KnPerson' = @{\r\n                                        'Element' = @{\r\n                                            'Fields' = @{\r\n                                                # Zoek op BcCo (Persoons-ID)\r\n                                                'MatchPer' = 0\r\n                                                # Nummer\r\n                                                'BcCo'     = $currentAccount.Persoonsnummer\r\n                                            }\r\n                                        }\r\n                                    }\r\n                                })\r\n                        }\r\n                    }\r\n                }\r\n                if ('TeNr' -in $propertiesChanged) {\r\n                    # Telefoonnr. werk\r\n                    $updateAccount.'AfasEmployee'.'Element'.Objects[0].'KnPerson'.'Element'.'Fields'.'TeNr' = $account.'AfasEmployee'.'Element'.Objects[0].'KnPerson'.'Element'.'Fields'.'TeNr'\r\n                    Write-Information \"Updating TeNr '$($currentAccount.Telefoonnr_werk)' with new value '$($updateAccount.'AfasEmployee'.'Element'.Objects[0].'KnPerson'.'Element'.'Fields'.'TeNr')'\"\r\n                }\r\n\r\n                if ('MbNr' -in $propertiesChanged) {\r\n                    # Mobiel werk\r\n                    $updateAccount.'AfasEmployee'.'Element'.Objects[0].'KnPerson'.'Element'.'Fields'.'MbNr' = $account.'AfasEmployee'.'Element'.Objects[0].'KnPerson'.'Element'.'Fields'.'MbNr'\r\n                    Write-Information \"Updating MbNr '$($currentAccount.Mobielnr_werk)' with new value '$($updateAccount.'AfasEmployee'.'Element'.Objects[0].'KnPerson'.'Element'.'Fields'.'MbNr')'\"\r\n                }\r\n\r\n                $body = ($updateAccount | ConvertTo-Json -Depth 10)\r\n                $splatWebRequest = @{\r\n                    Uri             = $BaseUri + \"/connectors/\" + $updateConnector\r\n                    Headers         = $headers\r\n                    Method          = 'PUT'\r\n                    Body            = ([System.Text.Encoding]::UTF8.GetBytes($body))\r\n                    ContentType     = \"application/json;charset=utf-8\"\r\n                    UseBasicParsing = $true\r\n                }\r\n\r\n                $updatedAccount = Invoke-RestMethod @splatWebRequest -Verbose:$false\r\n                Write-Information \"Successfully updated AFAS employee [$employeeID] attributes [MbNr] from [$phoneMobileOld] to [$phoneMobile] and [TeNr] from [$($currentAccount.Telefoonnr_werk)] to [$phoneFixed]\"\r\n                $Log = @{\r\n                    Action            = \"UpdateAccount\" # optional. ENUM (undefined = default) \r\n                    System            = \"AFAS Employee\" # optional (free format text) \r\n                    Message           = \"Successfully updated AFAS employee [$employeeID] attributes [MbNr] from [$phoneMobileOld] to [$phoneMobile] and [TeNr] from [$($currentAccount.Telefoonnr_werk)] to [$phoneFixed]\" # required (free format text) \r\n                    IsError           = $false # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) \r\n                    TargetDisplayName = $displayName # optional (free format text) \r\n                    TargetIdentifier  = $([string]$employeeID) # optional (free format text) \r\n                }\r\n                #send result back  \r\n                Write-Information -Tags \"Audit\" -MessageData $log  \r\n                break\r\n            }\r\n            'NoChanges' {\r\n                Write-Information \"Successfully checked AFAS employee [$employeeID] attributes [MbNr] and [TeNr], no changes needed\"\r\n                $Log = @{\r\n                    Action            = \"UpdateAccount\" # optional. ENUM (undefined = default) \r\n                    System            = \"AFAS Employee\" # optional (free format text) \r\n                    Message           = \"Successfully checked AFAS employee [$employeeID] attributes [MbNr] [$($currentAccount.Mobielnr_werk)] and [TeNr] [$($currentAccount.Telefoonnr_werk)], no changes needed\" # required (free format text) \r\n                    IsError           = $false # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) \r\n                    TargetDisplayName = $displayName # optional (free format text) \r\n                    TargetIdentifier  = $([string]$employeeID) # optional (free format text) \r\n                }\r\n                #send result back  \r\n                Write-Information -Tags \"Audit\" -MessageData $log  \r\n                break\r\n            }\r\n        }\r\n    }\r\n    catch {\r\n        $ex = $PSItem\r\n        if ( $($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or $($ex.Exception.GetType().FullName -eq 'System.Net.WebException')) {\r\n            $errorObject = Resolve-HTTPError -Error $ex\r\n\r\n            $verboseErrorMessage = $errorObject.ErrorMessage\r\n\r\n            $auditErrorMessage = Resolve-AFASErrorMessage -ErrorObject $errorObject.ErrorMessage\r\n        }\r\n\r\n        # If error message empty, fall back on $ex.Exception.Message\r\n        if ([String]::IsNullOrEmpty($verboseErrorMessage)) {\r\n            $verboseErrorMessage = $ex.Exception.Message\r\n        }\r\n        if ([String]::IsNullOrEmpty($auditErrorMessage)) {\r\n            $auditErrorMessage = $ex.Exception.Message\r\n        }\r\n\r\n        Write-Verbose \"Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($verboseErrorMessage)\"\r\n\r\n        if ($auditErrorMessage -Like \"No AFAS employee found with $($filterfieldid) $($filtervalue)\") {\r\n            Write-Error \"Failed to update AFAS employee [$employeeID]: No AFAS employee found with $($filterfieldid) $($filtervalue)\"\r\n            Write-Information \"Failed to update AFAS employee [$employeeID]: No AFAS employee found with $($filterfieldid) $($filtervalue)\"\r\n            $Log = @{\r\n                Action            = \"UpdateAccount\" # optional. ENUM (undefined = default) \r\n                System            = \"AFAS Employee\" # optional (free format text) \r\n                Message           = \"Failed to update AFAS employee [$employeeID]: No AFAS employee found with $($filterfieldid) $($filtervalue)\" # required (free format text) \r\n                IsError           = $true # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) \r\n                TargetDisplayName = $displayName # optional (free format text) \r\n                TargetIdentifier  = $([string]$employeeID) # optional (free format text) \r\n            }\r\n            #send result back  \r\n            Write-Information -Tags \"Audit\" -MessageData $log \r\n        }\r\n        else {\r\n            Write-Verbose \"Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($verboseErrorMessage)\"\r\n            Write-Error \"Error updating AFAS employee [$employeeID] attributes [MbNr] from [$($currentAccount.Mobielnr_werk)] to [$phoneMobile] and [TeNr] from [$($currentAccount.Telefoonnr_werk)] to [$phoneFixed]. Error Message: $auditErrorMessage\"\r\n            Write-Information \"Error updating AFAS employee [$employeeID] attributes [MbNr] from [$($currentAccount.Mobielnr_werk)] to [$phoneMobile] and [TeNr] from [$($currentAccount.Telefoonnr_werk)] to [$phoneFixed]. Error Message: $auditErrorMessage\"\r\n            $Log = @{\r\n                Action            = \"UpdateAccount\" # optional. ENUM (undefined = default) \r\n                System            = \"AFAS Employee\" # optional (free format text) \r\n                Message           = \"Error updating AFAS employee [$employeeID] attributes [MbNr] from [$($currentAccount.Mobielnr_werk)] to [$phoneMobile] and [TeNr] from [$($currentAccount.Telefoonnr_werk)] to [$phoneFixed]. Error Message: $auditErrorMessage\" # required (free format text) \r\n                IsError           = $true # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) \r\n                TargetDisplayName = $displayName # optional (free format text) \r\n                TargetIdentifier  = $([string]$employeeID) # optional (free format text) \r\n            }\r\n            #send result back  \r\n            Write-Information -Tags \"Audit\" -MessageData $log \r\n        }\r\n    }\r\n}\r\nelse {\r\n    Write-Information \"Skipped update attribute [MbNr] and [TeNr] of AFAS employee [$displayName] to [$phoneMobile] and [$phoneFixed]: employeeID is empty\"\r\n    $Log = @{\r\n        Action            = \"UpdateAccount\" # optional. ENUM (undefined = default) \r\n        System            = \"AFAS Employee\" # optional (free format text) \r\n        Message           = \"Skipped update attribute [MbNr] and [TeNr] of AFAS employee [$displayName] to [$phoneMobile] and [$phoneFixed]: employeeID is empty\" # required (free format text) \r\n        IsError           = $false # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) \r\n        TargetDisplayName = $displayName # optional (free format text) \r\n        TargetIdentifier  = $([string]$employeeID) # optional (free format text)\r\n    }\r\n    #send result back  \r\n    Write-Information -Tags \"Audit\" -MessageData $log \r\n}\r\n#endregion AFAS","runInCloud":false}
+{"name":"AD AFAS Account - Update phone","script":"# variables configured in form:\r\n$user = $form.gridUsers\r\n$phoneMobile = $form.mobilePhone\r\n$phoneFixed = $form.officePhone\r\n$BaseUrl = $AFASBaseUrl\r\n$Token = $AFASToken\r\n$getConnector = \"T4E_HelloID_Users_v2\"\r\n$updateConnector = \"KnEmployee\"\r\n$filterfieldid = \"Medewerker\"\r\n\r\n# Set debug logging\r\n$VerbosePreference = \"SilentlyContinue\"\r\n$InformationPreference = \"Continue\"\r\n$WarningPreference = \"Continue\"\r\n\r\n# Set TLS to accept TLS, TLS 1.1 and TLS 1.2\r\n[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls12\r\n\r\n#region global functions\r\nfunction Resolve-AFAS-ProfitError {\r\n    [CmdletBinding()]\r\n    param (\r\n        [Parameter(Mandatory)]\r\n        [object]\r\n        $ErrorObject\r\n    )\r\n    process {\r\n        $httpErrorObj = [PSCustomObject]@{\r\n            ScriptLineNumber = $ErrorObject.InvocationInfo.ScriptLineNumber\r\n            Line             = $ErrorObject.InvocationInfo.Line\r\n            ErrorDetails     = $ErrorObject.Exception.Message\r\n            FriendlyMessage  = $ErrorObject.Exception.Message\r\n        }\r\n        if (-not [string]::IsNullOrEmpty($ErrorObject.ErrorDetails.Message)) {\r\n            $httpErrorObj.ErrorDetails = $ErrorObject.ErrorDetails.Message\r\n        }\r\n        elseif ($ErrorObject.Exception.GetType().FullName -eq \u0027System.Net.WebException\u0027) {\r\n            if ($null -ne $ErrorObject.Exception.Response) {\r\n                $streamReaderResponse = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()\r\n                if (-not [string]::IsNullOrEmpty($streamReaderResponse)) {\r\n                    $httpErrorObj.ErrorDetails = $streamReaderResponse\r\n                }\r\n            }\r\n        }\r\n        try {\r\n            $errorDetailsObject = ($httpErrorObj.ErrorDetails | ConvertFrom-Json)\r\n\r\n            if ($null -ne $errorDetailsObject.externalMessage) {\r\n                $httpErrorObj.FriendlyMessage = $errorDetailsObject.externalMessage\r\n            }\r\n            else {\r\n                $httpErrorObj.FriendlyMessage = $errorDetailsObject\r\n            }\r\n        }\r\n        catch {\r\n            $httpErrorObj.FriendlyMessage = \"[$($httpErrorObj.ErrorDetails)]\"\r\n        }\r\n        Write-Output $httpErrorObj\r\n    }\r\n}\r\n#endregion global functions\r\n\r\n#region AD\r\ntry {\r\n    $actionMessage = \"updating AD attributes for user [$($user.userPrincipalName)] with objectguid [$($user.ObjectGuid)]\"\r\n\r\n    if ([String]::IsNullOrEmpty($phoneMobile) -eq $true) {\r\n        $phoneMobile = $null\r\n    }\r\n    if ([String]::IsNullOrEmpty($phoneFixed) -eq $true) {\r\n        $phoneFixed = $null\r\n    } \r\n\r\n    Set-ADUser -Identity $user.ObjectGuid -MobilePhone $phoneMobile -OfficePhone $phoneFixed\r\n    \r\n    $Log = @{\r\n        Action            = \"UpdateAccount\" # optional. ENUM (undefined = default) \r\n        System            = \"ActiveDirectory\" # optional (free format text) \r\n        Message           = \"Successfully updated AD user [$($user.userPrincipalName)] for attributes [MobilePhone] from [$($user.mobile)] to [$phoneMobile] and [BusinessPhones] [$($user.telephoneNumber)] from to [$phoneFixed]\" # required (free format text) \r\n        IsError           = $false # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) \r\n        TargetDisplayName = $user.userPrincipalName # optional (free format text) \r\n        TargetIdentifier  = $user.ObjectGuid # optional (free format text) \r\n    }\r\n    #send result back  \r\n    Write-Information -Tags \"Audit\" -MessageData $log    \r\n}\r\ncatch {\r\n    $ex = $PSItem\r\n    $auditMessage = \"Error $($actionMessage). Error: $($ex.Exception.Message)\"\r\n    $warningMessage = \"Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)\"    \r\n\r\n    $Log = @{\r\n        Action            = \"UpdateAccount\" # optional. ENUM (undefined = default) \r\n        System            = \"ActiveDirectory\" # optional (free format text) \r\n        Message           = \"Error $($actionMessage). Error Message: $auditMessage\" # required (free format text) \r\n        IsError           = $true # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) \r\n        TargetDisplayName = $user.userPrincipalName # optional (free format text) \r\n        TargetIdentifier  = $user.ObjectGuid # optional (free format text) \r\n    }\r\n    #send result back  \r\n    Write-Information -Tags \"Audit\" -MessageData $log      \r\n    Write-Warning $warningMessage   \r\n    Write-Error $auditMessage\r\n\r\n}\r\n#endregion AD\r\n\r\n#region AFAS\r\n# Used to connect to AFAS API endpoints\r\nif (-not([string]::IsNullOrEmpty($user.employeeID))) {\r\n\r\n    #Change mapping here\r\n    $account = [PSCustomObject]@{\r\n        \u0027AfasEmployee\u0027 = @{\r\n            \u0027Element\u0027 = @{\r\n                \u0027Objects\u0027 = @(\r\n                    @{\r\n                        \u0027KnPerson\u0027 = @{\r\n                            \u0027Element\u0027 = @{\r\n                                \u0027Fields\u0027 = @{\r\n                                    # # Telefoonnr. werk\r\n                                    \u0027TeNr\u0027 = $phoneFixed                     \r\n                                    # Mobiel werk\r\n                                    \u0027MbNr\u0027 = $phoneMobile\r\n                                }\r\n                            }\r\n                        }\r\n                    }\r\n                )\r\n            }\r\n        }\r\n    }\r\n\r\n    $filtervalue = $user.employeeID # Has to match the AFAS value of the specified filter field ($filterfieldid)\r\n\r\n    # Get current AFAS employee and verify if a user must be either [created], [updated and correlated] or just [correlated]\r\n    try {\r\n        $actionMessage = \"Querying AFAS employee with $($filterfieldid) $($filtervalue)\"\r\n\r\n        # Create authorization headers\r\n        $encodedToken = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($Token))\r\n        $authValue = \"AfasToken $encodedToken\"\r\n        $Headers = @{ Authorization = $authValue }\r\n        $Headers.Add(\"IntegrationId\", \"45963_140664\") # Fixed value - Tools4ever Partner Integration ID\r\n\r\n        $splatWebRequest = @{\r\n            Uri             = $BaseUrl + \"/connectors/\" + $getConnector + \"?filterfieldids=$filterfieldid\u0026filtervalues=$filtervalue\u0026operatortypes=1\"\r\n            Headers         = $headers\r\n            Method          = \u0027GET\u0027\r\n            ContentType     = \"application/json;charset=utf-8\"\r\n            UseBasicParsing = $true\r\n        }        \r\n        $currentAccount = (Invoke-RestMethod @splatWebRequest -Verbose:$false).rows\r\n\r\n        if ($null -eq $currentAccount.Medewerker) {\r\n            throw \"No AFAS employee found with $($filterfieldid) $($filtervalue)\"\r\n        }\r\n\r\n        # Check if current TeNr or MbNr has a different value from mapped value. AFAS will throw an error when trying to update this with the same value\r\n        if ([string]$currentAccount.Telefoonnr_werk -ne $account.\u0027AfasEmployee\u0027.\u0027Element\u0027.Objects[0].\u0027KnPerson\u0027.\u0027Element\u0027.\u0027Fields\u0027.\u0027TeNr\u0027) {\r\n            $propertiesChanged += @(\u0027TeNr\u0027)\r\n        }\r\n        if ([string]$currentAccount.Mobielnr_werk -ne $account.\u0027AfasEmployee\u0027.\u0027Element\u0027.Objects[0].\u0027KnPerson\u0027.\u0027Element\u0027.\u0027Fields\u0027.\u0027MbNr\u0027) {\r\n            $propertiesChanged += @(\u0027MbNr\u0027)\r\n        }\r\n        if ($propertiesChanged) {\r\n            Write-Verbose \"Account property(s) required to update: [$($propertiesChanged -join \",\")]\"\r\n            $updateAction = \u0027Update\u0027\r\n        }\r\n        else {\r\n            $updateAction = \u0027NoChanges\u0027\r\n        }\r\n\r\n        # Update AFAS Employee\r\n        switch ($updateAction) {\r\n            \u0027Update\u0027 {\r\n                $actionmessage = \"updating AFAS employee [$($user.EmployeeID)] attributes [MbNr] from [$($currentAccount.Mobielnr_werk)] to [$phoneMobile] and [TeNr] from [$($currentAccount.Telefoonnr_werk)] to [$phoneFixed].\"\r\n                # Create custom account object for update\r\n                $updateAccount = [PSCustomObject]@{\r\n                    \u0027AfasEmployee\u0027 = @{\r\n                        \u0027Element\u0027 = @{\r\n                            \u0027@EmId\u0027   = $currentAccount.Medewerker\r\n                            \u0027Objects\u0027 = @(@{\r\n                                    \u0027KnPerson\u0027 = @{\r\n                                        \u0027Element\u0027 = @{\r\n                                            \u0027Fields\u0027 = @{\r\n                                                # Zoek op BcCo (Persoons-ID)\r\n                                                \u0027MatchPer\u0027 = 0\r\n                                                # Nummer\r\n                                                \u0027BcCo\u0027     = $currentAccount.Persoonsnummer\r\n                                            }\r\n                                        }\r\n                                    }\r\n                                })\r\n                        }\r\n                    }\r\n                }\r\n                if (\u0027TeNr\u0027 -in $propertiesChanged) {\r\n                    # Telefoonnr. werk\r\n                    $updateAccount.\u0027AfasEmployee\u0027.\u0027Element\u0027.Objects[0].\u0027KnPerson\u0027.\u0027Element\u0027.\u0027Fields\u0027.\u0027TeNr\u0027 = $account.\u0027AfasEmployee\u0027.\u0027Element\u0027.Objects[0].\u0027KnPerson\u0027.\u0027Element\u0027.\u0027Fields\u0027.\u0027TeNr\u0027\r\n                }\r\n\r\n                if (\u0027MbNr\u0027 -in $propertiesChanged) {\r\n                    # Mobiel werk\r\n                    $updateAccount.\u0027AfasEmployee\u0027.\u0027Element\u0027.Objects[0].\u0027KnPerson\u0027.\u0027Element\u0027.\u0027Fields\u0027.\u0027MbNr\u0027 = $account.\u0027AfasEmployee\u0027.\u0027Element\u0027.Objects[0].\u0027KnPerson\u0027.\u0027Element\u0027.\u0027Fields\u0027.\u0027MbNr\u0027\r\n                }\r\n\r\n                $body = ($updateAccount | ConvertTo-Json -Depth 10)\r\n                $splatWebRequest = @{\r\n                    Uri             = $BaseUrl + \"/connectors/\" + $updateConnector\r\n                    Headers         = $headers\r\n                    Method          = \u0027PUT\u0027\r\n                    Body            = ([System.Text.Encoding]::UTF8.GetBytes($body))\r\n                    ContentType     = \"application/json;charset=utf-8\"\r\n                    UseBasicParsing = $true\r\n                }\r\n\r\n                $null = Invoke-RestMethod @splatWebRequest -Verbose:$false\r\n\r\n                $Log = @{\r\n                    Action            = \"UpdateAccount\" # optional. ENUM (undefined = default) \r\n                    System            = \"AFAS Employee\" # optional (free format text) \r\n                    Message           = \"Successfully updated AFAS employee [$($user.EmployeeID)] attributes [MbNr] from [$($user.mobile)] to [$phoneMobile] and [TeNr] from [$($currentAccount.Telefoonnr_werk)] to [$phoneFixed]\" # required (free format text) \r\n                    IsError           = $false # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) \r\n                    TargetDisplayName = $user.userPrincipalName # optional (free format text) \r\n                    TargetIdentifier  = $user.ObjectGuid # optional (free format text) \r\n                }\r\n                #send result back  \r\n                Write-Information -Tags \"Audit\" -MessageData $log  \r\n                break\r\n            }\r\n            \u0027NoChanges\u0027 {\r\n                $Log = @{\r\n                    Action            = \"UpdateAccount\" # optional. ENUM (undefined = default) \r\n                    System            = \"AFAS Employee\" # optional (free format text) \r\n                    Message           = \"Successfully checked AFAS employee [$($user.EmployeeID)] attributes [MbNr] [$($currentAccount.Mobielnr_werk)] and [TeNr] [$($currentAccount.Telefoonnr_werk)], no changes needed\" # required (free format text) \r\n                    IsError           = $false # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) \r\n                    TargetDisplayName = $user.userPrincipalName # optional (free format text) \r\n                    TargetIdentifier  = $user.ObjectGuid # optional (free format text) \r\n                }\r\n                #send result back  \r\n                Write-Information -Tags \"Audit\" -MessageData $log  \r\n                break\r\n            }\r\n        }\r\n    }\r\n    catch {\r\n        $ex = $PSItem\r\n        if ($($ex.Exception.GetType().FullName -eq \u0027Microsoft.PowerShell.Commands.HttpResponseException\u0027) -or\r\n            $($ex.Exception.GetType().FullName -eq \u0027System.Net.WebException\u0027)) {\r\n            $errorObj = Resolve-AFAS-ProfitError -ErrorObject $ex\r\n            $warningMessage = \"Error at Line \u0027$($errorObj.ScriptLineNumber)\u0027: $($errorObj.Line). Error: $($errorObj.ErrorDetails)\"\r\n            $auditMessage = \"Error $($actionMessage). Error: $($errorObj.FriendlyMessage)\"\r\n        }\r\n        else {\r\n            $warningMessage = \"Error at Line \u0027$($ex.InvocationInfo.ScriptLineNumber)\u0027: $($ex.InvocationInfo.Line). Error: $($ex.Exception.Message)\"\r\n            $auditMessage = \"Error $($actionMessage). Error: $($ex.Exception.Message)\"\r\n        }        \r\n        $log = @{\r\n            Action            = \"UpdateAccount\" # optional. ENUM (undefined = default) \r\n            System            = \"AFAS Employee\" # optional (free format text) \r\n            Message           = $auditMessage # required (free format text) \r\n            IsError           = $true # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) \r\n            TargetDisplayName = $user.userPrincipalName # optional (free format text) \r\n            TargetIdentifier  = $user.ObjectGuid # optional (free format text) \r\n        }\r\n        Write-Information -Tags \"Audit\" -MessageData $log\r\n        Write-Warning $warningMessage\r\n        Write-Error $auditMessage\r\n        # exit # use when using multiple try/catch and the script must stop\r\n    }\r\n}\r\nelse {\r\n    $Log = @{\r\n        Action            = \"UpdateAccount\" # optional. ENUM (undefined = default) \r\n        System            = \"AFAS Employee\" # optional (free format text) \r\n        Message           = \"Skipped update attribute [MbNr] and [TeNr] of AFAS employee [$($user.userPrincipalName)] to [$phoneMobile] and [$phoneFixed]: employeeID is empty\" # required (free format text) \r\n        IsError           = $false # optional. Elastic reporting purposes only. (default = $false. $true = Executed action returned an error) \r\n        TargetDisplayName = $user.userPrincipalName # optional (free format text) \r\n        TargetIdentifier  = $user.ObjectGuid # optional (free format text) \r\n    }\r\n    #send result back  \r\n    Write-Information -Tags \"Audit\" -MessageData $log \r\n}\r\n#endregion AFAS","runInCloud":false}
 '@ 
 
 Invoke-HelloIDDelegatedForm -DelegatedFormName $delegatedFormName -DynamicFormGuid $dynamicFormGuid -AccessGroups $delegatedFormAccessGroupGuids -Categories $delegatedFormCategoryGuids -UseFaIcon "True" -FaIcon "fa fa-phone" -task $tmpTask -returnObject ([Ref]$delegatedFormRef) 

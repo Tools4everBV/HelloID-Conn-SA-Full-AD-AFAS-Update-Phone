@@ -1,0 +1,26 @@
+[
+    {
+        "key":  "SamAccountName",
+        "type":  0
+    },
+    {
+        "key":  "DisplayName",
+        "type":  0
+    },
+    {
+        "key":  "UserPrincipalName",
+        "type":  0
+    },
+    {
+        "key":  "Mobile",
+        "type":  0
+    },
+    {
+        "key":  "telephoneNumber",
+        "type":  0
+    },
+    {
+        "key":  "ObjectGuid",
+        "type":  0
+    }
+]
