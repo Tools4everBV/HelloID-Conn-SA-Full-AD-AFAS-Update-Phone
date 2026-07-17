@@ -1,7 +1,7 @@
 # HelloID-Conn-SA-Full-AD-AFAS-Update-Phone
 
-| :information_source: Information |
-| :------------------------------- |
+| :information_source: Information                                                                                                                                                                                                                                                                                                                                                          |
+|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | This repository contains the connector and configuration code only. The implementer is responsible for acquiring the connection details such as username, password, certificate, etc. You might even need to sign a contract or agreement with the supplier before implementing this connector. Please contact the client's application manager to coordinate the connector requirements. |
 
 ## Description
@@ -29,7 +29,10 @@ Recommended permissions:
 #### AFAS setup
 
 Ensure AFAS Profit is configured with:
-- AFAS AppConnector token
+- AFAS AppConnector configured for OAuth client credentials (OAuth-only)
+- AFAS OAuth credentials:
+   - ClientId
+   - ClientSecret
 - Loaded AFAS GetConnector:
    - Tools4ever - HelloID - T4E_HelloID_Users_v2.gcn
    - https://github.com/Tools4everBV/HelloID-Conn-Prov-Target-AFAS-Profit-Employees
@@ -46,11 +49,11 @@ Once you have completed the Active Directory and AFAS setup, configure the follo
 The following user-defined variables are used by the connector.
 
 | Setting                 | Description                                                                                                               | Mandatory |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------- |
+|-------------------------|---------------------------------------------------------------------------------------------------------------------------|-----------|
 | AdUsersDisabledSearchOu | The organizational units (OUs) to search for disabled AD users. Multiple OUs can be specified separated by semicolons (;) | Yes       |
 | AFASBaseUrl             | The base URL to the AFAS Profit REST API                                                                                  | Yes       |
-| AFASToken               | The AppConnector token for AFAS Profit authentication                                                                     | Yes       |
-
+| AFASClientId            | The OAuth ClientId for AFAS Profit authentication                                                                         | Yes       |
+| AFASClientSecret        | The OAuth ClientSecret for AFAS Profit authentication                                                                     | Yes       |
 
 ## Remarks
 
@@ -74,10 +77,10 @@ The following user-defined variables are used by the connector.
 
 ### Endpoints and operations
 
-The following operations are used by the connector.W
+The following operations are used by the connector.
 
 | Endpoint/Operation                            | Description                                   |
-| --------------------------------------------- | --------------------------------------------- |
+|-----------------------------------------------|-----------------------------------------------|
 | Active Directory (Get-ADUser)                 | Search and retrieve Active Directory users    |
 | Active Directory (Set-ADUser)                 | Update Active Directory user phone attributes |
 | {AFASBaseUrl}/connectors/T4E_HelloID_Users_v2 | Retrieve AFAS employee information            |
