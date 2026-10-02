@@ -3,7 +3,8 @@ $user = $form.gridUsers
 $phoneMobile = $form.mobilePhone
 $phoneFixed = $form.officePhone
 $BaseUrl = $AFASBaseUrl
-$Token = $AFASToken
+$ClientId = $AFASClientId
+$ClientSecret = $AFASClientSecret
 $getConnector = "T4E_HelloID_Users_v2"
 $updateConnector = "KnEmployee"
 $filterfieldid = "Medewerker"
@@ -137,10 +138,21 @@ if (-not([string]::IsNullOrEmpty($user.employeeID))) {
     try {
         $actionMessage = "Querying AFAS employee with $($filterfieldid) $($filtervalue)"
 
+        # Obtain OAuth access token
+        $tokenUri = "$BaseUrl/oauth/token"
+        $tokenRequestBody = @{
+            grant_type    = 'client_credentials'
+            client_id     = $ClientId
+            client_secret = $ClientSecret
+        }
+        $tokenResponse = Invoke-RestMethod -Method Post -Uri $tokenUri -Body $tokenRequestBody -ContentType 'application/x-www-form-urlencoded' -UseBasicParsing
+
+        if ([String]::IsNullOrWhiteSpace([String]$tokenResponse.token_type) -or ([String]$tokenResponse.token_type).ToLowerInvariant() -ne 'bearer') {
+            throw "OAuth token endpoint returned an unexpected token_type [$($tokenResponse.token_type)]. Expected [Bearer]."
+        }
+        
         # Create authorization headers
-        $encodedToken = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($Token))
-        $authValue = "AfasToken $encodedToken"
-        $Headers = @{ Authorization = $authValue }
+        $Headers = @{ Authorization = "$($tokenResponse.token_type) $($tokenResponse.access_token)" }
         $Headers.Add("IntegrationId", "45963_140664") # Fixed value - Tools4ever Partner Integration ID
 
         $splatWebRequest = @{
