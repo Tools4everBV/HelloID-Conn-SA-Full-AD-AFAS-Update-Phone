@@ -146,6 +146,10 @@ if (-not([string]::IsNullOrEmpty($user.employeeID))) {
             client_secret = $ClientSecret
         }
         $tokenResponse = Invoke-RestMethod -Method Post -Uri $tokenUri -Body $tokenRequestBody -ContentType 'application/x-www-form-urlencoded' -UseBasicParsing
+
+        if ([String]::IsNullOrWhiteSpace([String]$tokenResponse.token_type) -or ([String]$tokenResponse.token_type).ToLowerInvariant() -ne 'bearer') {
+            throw "OAuth token endpoint returned an unexpected token_type [$($tokenResponse.token_type)]. Expected [Bearer]."
+        }
         
         # Create authorization headers
         $Headers = @{ Authorization = "$($tokenResponse.token_type) $($tokenResponse.access_token)" }
